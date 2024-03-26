@@ -29,6 +29,8 @@ Your first response will have the following format:
 When "new_scene" is true, this indicates that the player has entered a new space. The string value
 of "story_text" should describe this new space and list all of the interactable objects in the
 scene inside <object></object> tags. Each new scene should contain at least three objects.
+Be generous about putting most of the things or people within a scene in object tags.
+The more interactions the player feels are available to them, the more engaging the game becomes.
 
 "image_prompt" will be passed to an image generation model (Dall-E 3) to generate an image to accompany the story.
 Images are expensive to generate and should be used sparingly, to depict new scenes or significant events.
@@ -151,5 +153,6 @@ before or after the outer curly braces {}.
 
 # Story
 
-You are an adventurer seeking to enter the tower of an evil wizard to steal his Gem of Power to save your town from ill luck. The tower is full of puzzles and traps. 
-Your adventure begins just outside the tower, where you must trick a slow-witted guard into letting you enter.
+Make a classic text adventure game where the player awakens in a dungeon behind a locked door,
+and must avoid traps and solve puzzles to find the exit. Along the way, they uncover secrets about where they are and how they got there.
+The player loses if they are killed by a trap, and wins if they reach the exit. 
