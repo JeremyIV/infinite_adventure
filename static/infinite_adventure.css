@@ -1,0 +1,74 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+#game-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+#story {
+  margin-bottom: 20px;
+}
+
+#image-container {
+  margin-bottom: 20px;
+}
+
+#inventory,
+#objects {
+  margin-bottom: 10px;
+}
+
+#prompt {
+  margin-top: 20px;
+}
+
+input[type="text"] {
+  padding: 5px;
+  margin-right: 10px;
+}
+
+button {
+  padding: 5px 10px;
+}
+
+.item {
+  display: inline-block;
+  background-color: #e0e0e0;
+  padding: 5px 10px;
+  margin: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.object {
+  display: inline-block;
+  background-color: #e0e0e0;
+  padding: 2px 5px;
+  margin: 2px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.action {
+  display: inline-block;
+  background-color: #f0f0f0;
+  padding: 5px 10px;
+  margin: 5px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.storytext {
+  background-color: #e8f5e9;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+img {
+  width: 300px;
+}

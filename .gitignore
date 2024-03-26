@@ -1,0 +1,3 @@
+cache/images/*.png
+cache/responses/*.txt
+__pycache__/
