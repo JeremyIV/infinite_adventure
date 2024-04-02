@@ -7,6 +7,7 @@ from flask import (
     send_file,
     send_from_directory,
 )
+from flask_pymongo import PyMongo
 from ai_api import get_AI_response, generate_image, get_hash_string
 import json
 import re
@@ -16,10 +17,13 @@ import os
 app = Flask(__name__)
 app.secret_key = "INFINITE ADVENTURE"
 
-object_re = re.compile(r"<object>(.*?)</object>")
+# Configure MongoDB connection
+app.config["MONGO_URI"] = (
+    "mongodb+srv://vonder2:dFOsCN1eM3lfcz6c@infinite-adventure.anjunas.mongodb.net/?retryWrites=true&w=majority&appName=infinite-adventure"
+)
+mongo = PyMongo(app)
 
-next_session_id = 0
-session_data = {}
+object_re = re.compile(r"<object>(.*?)</object>")
 
 
 def new_state(state, player_prompt):
@@ -80,7 +84,8 @@ def serve_static(filename):
 
 @app.route("/image/<path:filename>")
 def serve_image(filename):
-    state = session_data[session["id"]]
+    session_id = session["id"]
+    state = mongo.db.sessions.find_one({"_id": session_id})
     image_path = Path("cache/images") / filename
 
     if image_path.exists():
@@ -102,20 +107,18 @@ def home():
 
 @app.route("/start")
 def start():
-    global next_session_id
     print("STARTING!!")
-    state = {}
-    state["inventory"] = []
-    state["objects"] = []
-    state["system_prompt"] = open("system_prompts/system_prompt.txt").read()
-    state["assistant_responses"] = []
-    state["user_responses"] = []
-    state["image_prompts"] = {}
+    state = {
+        "inventory": [],
+        "objects": [],
+        "system_prompt": open("system_prompts/system_prompt.txt").read(),
+        "assistant_responses": [],
+        "user_responses": [],
+        "image_prompts": {},
+    }
 
-    session_id = next_session_id
-    next_session_id += 1
-    session["id"] = session_id
-    session_data[session_id] = state
+    session_id = mongo.db.sessions.insert_one(state).inserted_id
+    session["id"] = str(session_id)
 
     result = new_state(state, None)
     print("Starting result")
@@ -130,7 +133,8 @@ def act():
     object_name = data.get("object")
     print("Acting!!")
     print(f"use {item} on {object_name}")
-    state = session_data[session["id"]]
+    session_id = session["id"]
+    state = mongo.db.sessions.find_one({"_id": session_id})
     print(state["assistant_responses"])
     print(state["user_responses"])
 
@@ -153,7 +157,9 @@ def act():
 
     user_response = f"use {item} on {object_name}"
 
-    return new_state(state, user_response)
+    result = new_state(state, user_response)
+    mongo.db.sessions.update_one({"_id": session_id}, {"$set": state})
+    return result
 
 
 if __name__ == "__main__":
