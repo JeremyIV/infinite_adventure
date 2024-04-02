@@ -157,4 +157,11 @@ def act():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=os.environ.get("PORT"))
+    print("Just started the server script!!")
+    port = os.environ.get("PORT")
+    if port is None:
+        print("No port yo!")
+    else:
+        print(f"Trying to connect on port {port}")
+        print(type(port))
+    app.run(debug=True, port=int(port))
