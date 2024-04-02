@@ -2,4 +2,5 @@ anthropic
 openai
 requests
 flask
+flask-pymongo
 gunicorn
