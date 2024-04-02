@@ -20,8 +20,8 @@ Your first response will have the following format:
     "story_text": "You find yourself behind a locked <object>door</object>. A <object>torch</object> on the wall lights the room. You also see a <object>key</object> on the floor.",
     "image_prompt": "a dimly lit stone-walled room with a sturdy, locked wooden door. There is a torch on the wall and a key on the ground.",
     "secret": "The key is not for the door, but for a trapdoor in the back of the room which the player will see if they either look around the room, or get the torch. The trapdoor leads to a store room where a skeleton holds a brass key to the door."
-    "options": [],
-    "inventory": ["walk", "look", "get"],
+    "new_items": ["walk", "look", "get"],
+    "remove_items": [],
     "remove_objects": [],
     "no_progress": false
 }
@@ -39,11 +39,15 @@ Most of the time, you should set "image_prompt" to "".
 "secret" is a hidden scratchpad where you can describe things the player has yet to discover.
 This field is visible only to you, never to the player. It can be useful for maintaining story consistency across branching paths.
 
-"inventory" contains a list of items and actions the player can use to interact with objects.
-This list should contain both objects in the player's possession, like "rope", or "key", and actions they might take on the objects in the scene.
+"new_items" contains a list of items and actions to add to the player's inventory. By default, the
+player's inventory starts out empty. Be sure to add at least these three basic actions, "walk",
+"look", and "get", at the start of the game, otherwise the player won't be able to do anything.
 
 To play the game, the player chooses an item (or action) from their inventory, and an object from
 the scene, and responds "use {item} on {object}", for example, "use get on torch".
+
+"remove_items" will remove existing items from the user's inventory. This is useful if, for
+example, the user just used a consumable item, such as a potion.
 
 "remove_objects" will remove existing objects from the scene, so that they are no longer
 interactable. This is useful if the player destroys an object, or when the player gets an object
@@ -56,8 +60,8 @@ For example, after the player responds "use get on torch", you might respond:
     "story_text": "With considerable effort, you manage to yank the torch out of its bracket in the wall. In the flickering light you notice a <object>key</object> on the floor.",
     "image_prompt": "",
     "secret": "",
-    "options": [],
-    "inventory": ["walk", "look", "get", "torch"],
+    "new_items": ["torch"],
+    "remove_items": [],
     "remove_objects": ["torch"],
     "no_progress": false
 }
@@ -105,8 +109,6 @@ To present dialog options, you can use the following trick:
     "story_text": "... What do you say? <object>What are you doing here?</object> <object>Tell me more about the abandoned mine.</object> <object>Goodbye.</object>",
     "image_prompt": "",
     "secret": "",
-    "options": [],
-    "verbs": [],
     "new_items": ["say"],
     "remove_items": [],
     "remove_objects": [],
