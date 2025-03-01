@@ -1,27 +1,108 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Infinite Adventure</title>
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="static/infinite_adventure.css"
-    />
-  </head>
-  <body>
-    <div id="game-container">
-      <div id="story"></div>
-      <div id="image-container"></div>
-      <div id="inventory"></div>
-      <div id="actions">
-        <label>Use </label>
-        <input type="text" id="item-input" placeholder="Item" />
-        <label>on </label>
-        <input type="text" id="object-input" placeholder="Object" />
-        <button id="use-button">Use</button>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infinite Adventure</title>
+  <link rel="stylesheet" href="static/infinite_adventure.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- API Key Form: This is the new part -->
+    <div id="key-form-container">
+      <h1>Infinite Adventure</h1>
+      <p>A text-based adventure game powered by AI</p>
+      <form id="api-key-form">
+        <div class="form-group">
+          <label for="anthropic-key">Anthropic API Key:</label>
+          <input type="password" id="anthropic-key" placeholder="sk-ant-..." required>
+          <small>Used for text generation with Claude</small>
+        </div>
+        <div class="form-group">
+          <label for="openai-key">OpenAI API Key:</label>
+          <input type="password" id="openai-key" placeholder="sk-..." required>
+          <small>Used for image generation with DALL-E</small>
+        </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="remember-keys" checked>
+          <label for="remember-keys">Remember my API keys</label>
+          <small>Saves keys in browser cookies for convenience</small>
+        </div>
+        <div class="button-group">
+          <button type="submit" id="start-button">Start Adventure</button>
+          <button type="button" id="clear-keys" class="secondary-button">Clear Saved Keys</button>
+        </div>
+        <p class="note">Your API keys are used only for direct API calls and are never stored or sent to any server.</p>
+      </form>
+    </div>
+    
+    <!-- Game Container: This is the existing game UI -->
+    <div id="game-container" style="display: none;">
+      <div class="header">
+        <h1>Infinite Adventure</h1>
+      </div>
+      <div class="main-content">
+        <div id="story-container">
+          <div id="story"></div>
+          <div id="image-container"></div>
+        </div>
+        <div class="interaction">
+          <div class="inventory-section">
+            <h3>Inventory</h3>
+            <div id="inventory"></div>
+          </div>
+          <div class="objects-section">
+            <h3>Objects</h3>
+            <div id="objects"></div>
+          </div>
+          <div class="actions">
+            <div class="input-group">
+              <label for="item-input">Use:</label>
+              <input type="text" id="item-input" placeholder="Select an item">
+            </div>
+            <div class="input-group">
+              <label for="object-input">On:</label>
+              <input type="text" id="object-input" placeholder="Select an object">
+            </div>
+            <button id="use-button" type="button">Submit</button>
+          </div>
+        </div>
+      </div>
+      <div class="footer">
+        <p class="tip">Having trouble? Enable debug mode by opening your browser console (F12) and typing <code>toggleDebug()</code></p>
       </div>
     </div>
-
-    <script src="static/infinite_adventure.js"></script>
-  </body>
+  </div>
+  
+  <!-- Debug console - hidden by default -->
+  <div id="debug-console">
+    <h3>Debug Console</h3>
+    <div id="debug-output"></div>
+    <div class="debug-help" style="margin-top: 10px; font-size: 0.8em; color: #0a0;">
+      Toggle with <code>toggleDebug()</code> in browser console (F12)
+    </div>
+  </div>
+  
+  <script src="static/infinite_adventure.js"></script>
+  
+  <!-- Init script to check if everything is loaded -->
+  <script>
+    window.onload = function() {
+      console.log("Window fully loaded");
+      
+      // Debug check - log all important elements
+      const elements = [
+        "app-container", "key-form-container", "api-key-form", 
+        "anthropic-key", "openai-key", "game-container", 
+        "story", "inventory", "objects", "item-input", 
+        "object-input", "use-button"
+      ];
+      
+      elements.forEach(id => {
+        const el = document.getElementById(id);
+        console.log(`Element ${id} exists: ${el !== null}`);
+      });
+    };
+  </script>
+</body>
 </html>

@@ -73,3 +73,240 @@ button {
 img {
   width: 400px;
 }
+/* API Key Form - Terminal Style */
+#key-form-container {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #000;
+  border: 1px solid #0f0;
+  border-radius: 5px;
+  text-align: center;
+  font-family: "Courier New", Courier, monospace;
+}
+
+#key-form-container h1 {
+  color: #0f0;
+  margin-bottom: 10px;
+}
+
+#key-form-container p {
+  color: #0f0;
+  margin-bottom: 25px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.checkbox-group input[type="checkbox"] {
+  margin-right: 10px;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #0f0;
+  background-color: #000;
+  position: relative;
+  cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"]:checked::after {
+  content: "✓";
+  color: #0f0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+}
+
+.checkbox-group label {
+  display: inline;
+  margin-right: 10px;
+}
+
+.checkbox-group small {
+  flex-basis: 100%;
+  margin-left: 30px;
+}
+
+.button-group {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.secondary-button {
+  background-color: transparent;
+  color: #0f0;
+  border: 1px dashed #0f0;
+  padding: 12px 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #0f0;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  background-color: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  border-radius: 5px;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #0a0;
+  font-size: 0.8em;
+}
+
+#api-key-form button {
+  background-color: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+  padding: 12px 24px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: "Courier New", Courier, monospace;
+}
+
+#api-key-form button:hover {
+  background-color: #030;
+}
+
+.note {
+  margin-top: 20px;
+  font-size: 0.8em;
+  color: #0a0;
+}
+
+/* Game UI Additions */
+.loading, .thinking {
+  margin: 10px 0;
+  padding: 10px;
+  font-style: italic;
+  color: #0a0;
+  background-color: #001100;
+  border-left: 3px solid #0f0;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.error {
+  margin: 10px 0;
+  padding: 10px;
+  color: #f00;
+  background-color: #110000;
+  border-left: 3px solid #f00;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.scene-image {
+  max-width: 100%;
+  border: 2px solid #0f0;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+.action {
+  margin: 10px 0;
+  padding: 8px 12px;
+  background-color: #001100;
+  border-radius: 4px;
+  color: #0f0;
+  font-weight: bold;
+  border: 1px solid #0f0;
+}
+
+/* Debug Console */
+#debug-console {
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px dashed #0f0;
+  background-color: #000;
+  color: #0f0;
+  font-family: "Courier New", Courier, monospace;
+  display: none; /* Hidden by default */
+}
+
+#debug-console h3 {
+  color: #0f0;
+  margin-top: 0;
+}
+
+#debug-output {
+  background: #001100;
+  padding: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: "Courier New", Courier, monospace;
+  color: #0f0;
+  border: 1px solid #0a0;
+}
+
+/* Initially hide the game container */
+#game-container {
+  display: none;
+}
+
+/* Footer and helper messages */
+.footer {
+  margin-top: 30px;
+  padding-top: 10px;
+  border-top: 1px dashed #0f0;
+  font-size: 0.8em;
+}
+
+.tip {
+  color: #0a0;
+  font-style: italic;
+}
+
+.tip code {
+  background-color: #001100;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* Make inputs consistent */
+input[type="password"] {
+  padding: 5px;
+  margin-right: 10px;
+  background-color: #000;
+  color: #0f0;
+  border: 1px solid #0f0;
+}
+
+/* Style headers in the game container */
+.header h1 {
+  color: #0f0;
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #0f0;
+  padding-bottom: 10px;
+}
+
+.interaction h3 {
+  color: #0f0;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
