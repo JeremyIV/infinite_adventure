@@ -36,31 +36,28 @@ def new_state(state, player_prompt):
     print("----------------------")
     # update assistant_responses
     data = json.loads(response)
+    image_url = None
     if data["no_progress"]:
         state["user_responses"].pop(-1)
     else:
         state["assistant_responses"].append(response)
 
-    # update current_objects
-    if data["new_scene"]:
-        state["objects"] = set()
+        # update current_objects
+        if data["new_scene"]:
+            state["objects"] = set()
 
-    new_objects = object_re.findall(data["story_text"])
-    state["objects"] = sorted(
-        (set(state["objects"]) | set(new_objects)) - set(data["remove_objects"])
-    )
+        new_objects = object_re.findall(data["story_text"])
+        state["objects"] = sorted(
+            (set(state["objects"]) | set(new_objects)) - set(data["remove_objects"])
+        )
 
-    # update inventory
-    state["inventory"] = sorted(
-        (set(state["inventory"]) | set(data["new_items"])) - set(data["remove_items"])
-    )
+        # update inventory
+        state["inventory"] = sorted(data["inventory"])
 
-    image_url = None
-
-    if data["image_prompt"]:
-        hash_str = get_hash_string(data["image_prompt"])
-        image_url = f"image/{hash_str}.png"
-        state["image_prompts"][hash_str] = data["image_prompt"]
+        if data["image_prompt"]:
+            hash_str = get_hash_string(data["image_prompt"])
+            image_url = f"image/{hash_str}.png"
+            state["image_prompts"][hash_str] = data["image_prompt"]
 
     result = {
         "image_url": image_url,
