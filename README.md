@@ -2,29 +2,30 @@
 
 Create AI Generated Text Adventures.
 
-## Getting Started
+## About
 
-You will need:
+Infinite Adventure is a browser-based text adventure game that uses AI to generate interactive story content. This is a frontend-only version that runs entirely in your browser using the Anthropic Claude API for text generation and OpenAI's DALL-E for image generation.
 
-1. An openAI API key for DALL-E image generation, set in the env var `OPENAI_API_KEY`
-2. An anthropic API key for text generation, set in the env var `ANTHROPIC_API_KEY`
-3. Python 3.x
-4. Install the project requirements:
-   ```
-   pip install -r requirements.txt
-   ```
+## How to Play
 
-# Usage
+1. Visit the [GitHub Pages site](https://jeremyiv.github.io/infinite_adventure/)
+2. Enter your API keys when prompted:
+   - Anthropic API key for the story text generation
+   - OpenAI API key for image generation
+3. Start your adventure!
 
-To run the application, use:
+## Customizing the Game
 
-```
-python server.py
-```
+To customize the adventure's theme and gameplay, you can modify the system prompt in `system_prompt.txt`. The `#Story` section defines the general theme and goals of the adventure.
 
-then navigate to `http://127.0.0.1:5000/` in a browser.
+## Features
 
-Each round of story generation can take up to a minute, but will then be cached, so it will be fast the next time.
-If you do not want the same experience twice, you can delete the files in `cache/responses` and `cache/images`.
+- Dynamic text adventure generation
+- AI-generated imagery for scenes
+- Interactive objects and inventory system
+- Branching storylines based on your choices
+- Client-side caching for faster repeat experiences
 
-To customize the story, change the prompt in the `#Story` section of `system_prompts/system_prompt.txt`
+## Privacy
+
+All API calls are made directly from your browser. Your API keys and game data remain on your device and are not sent to any server other than the respective AI providers.

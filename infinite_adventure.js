@@ -149,7 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadSystemPrompt() {
     debug("Loading system prompt from external file...");
     try {
-      const response = await fetch('static/system_prompt.txt');
+      const response = await fetch('system_prompt.txt');
       if (!response.ok) {
         throw new Error(`Failed to load system prompt: ${response.status} ${response.statusText}`);
       }

@@ -1,3 +1,23 @@
-cache/images/*.png
-cache/responses/*.txt
-__pycache__/
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Cache files
+.cache/
