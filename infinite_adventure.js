@@ -1,6 +1,59 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Debug configuration
+  //=============================================================================
+  // CONFIGURATION AND CONSTANTS
+  //=============================================================================
+  const CONFIG = {
+    // API settings
+    API_ENDPOINTS: {
+      ANTHROPIC: "https://api.anthropic.com/v1/messages",
+      OPENAI_IMAGE: "https://api.openai.com/v1/images/generations",
+      STORAGE_SERVER: "http://localhost:5000/api"
+    },
+    API_VERSIONS: {
+      ANTHROPIC: "2023-06-01"
+    },
+    AI_MODELS: {
+      CLAUDE: "claude-3-opus-20240229",
+      DALLE: "dall-e-3"
+    },
+    GENERATION_SETTINGS: {
+      MAX_TOKENS: 1000,
+      TEMPERATURE: 0.7,
+      IMAGE_SIZE: "1024x1024",
+      IMAGE_QUALITY: "standard"
+    },
+    // Cookie settings
+    COOKIE_EXPIRY_DAYS: 30,
+    // Regular expressions
+    REGEX: {
+      OBJECT_PATTERN: /<object>(.*?)<\/object>/g
+    }
+  };
+
+  // Game state (server-side state replacement)
+  let gameState = {
+    inventory: [],
+    objects: [],
+    system_prompt: "",
+    assistant_responses: [],
+    user_responses: [],
+    image_prompts: {}
+  };
+
+  // API keys
+  let anthropicApiKey = "";
+  let openaiApiKey = "";
+  
+  // UI element references
+  let appContainer, keyFormContainer, gameContainer, storyElement;
+  let imageContainer, inventoryElement, objectsElement;
+  let itemInput, objectInput, useButton, apiKeyForm;
+
   let debugEnabled = false;
+
+  //=============================================================================
+  // DEBUGGING UTILITIES
+  //=============================================================================
   
   // Create global toggle function that can be called from browser console
   window.toggleDebug = function() {
@@ -38,6 +91,10 @@ document.addEventListener("DOMContentLoaded", () => {
   
   debug("DOM content loaded");
   
+  //=============================================================================
+  // COOKIE AND STORAGE FUNCTIONS
+  //=============================================================================
+  
   // Cookie functions for saving/loading API keys
   function setCookie(name, value, days) {
     const expires = new Date();
@@ -66,12 +123,16 @@ document.addEventListener("DOMContentLoaded", () => {
     debug(`Cookie deleted: ${name}`);
   }
   
+  //=============================================================================
+  // API KEY MANAGEMENT
+  //=============================================================================
+  
   // Functions to save and load API keys
   function saveApiKeys(anthropicKey, openaiKey) {
     const rememberKeys = document.getElementById("remember-keys").checked;
     if (rememberKeys) {
-      setCookie("anthropicApiKey", anthropicKey, 30); // Save for 30 days
-      setCookie("openaiApiKey", openaiKey, 30);
+      setCookie("anthropicApiKey", anthropicKey, CONFIG.COOKIE_EXPIRY_DAYS);
+      setCookie("openaiApiKey", openaiKey, CONFIG.COOKIE_EXPIRY_DAYS);
       debug("API keys saved to cookies");
     } else {
       deleteCookie("anthropicApiKey");
@@ -100,7 +161,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return { anthropicKey, openaiKey };
   }
   
-  // Function to clear saved API keys
   function clearSavedApiKeys() {
     deleteCookie("anthropicApiKey");
     deleteCookie("openaiApiKey");
@@ -114,39 +174,10 @@ document.addEventListener("DOMContentLoaded", () => {
     debug("Saved API keys cleared");
     alert("Saved API keys have been cleared.");
   }
-  
-  // Game UI elements - we'll get these elements after DOM is loaded
-  const appContainer = document.getElementById("app-container");
-  let keyFormContainer = document.getElementById("key-form-container");
-  let gameContainer = document.getElementById("game-container");
-  let storyElement = document.getElementById("story");
-  let imageContainer = document.getElementById("image-container");
-  let inventoryElement = document.getElementById("inventory");
-  let objectsElement = document.getElementById("objects");
-  let itemInput = document.getElementById("item-input");
-  let objectInput = document.getElementById("object-input");
-  let useButton = document.getElementById("use-button");
-  let apiKeyForm = document.getElementById("api-key-form");
-  
-  // API keys
-  let anthropicApiKey = "";
-  let openaiApiKey = "";
-  
-  // Storage server settings
-  const STORAGE_SERVER_URL = "http://localhost:5000/api"; // Base URL for the storage server
-  
-  // Game state (replaces server-side state)
-  let gameState = {
-    inventory: [],
-    objects: [],
-    system_prompt: "",
-    assistant_responses: [],
-    user_responses: [],
-    image_prompts: {}
-  };
 
-  // Object regex for extracting objects from story text
-  const objectRegex = /<object>(.*?)<\/object>/g;
+  //=============================================================================
+  // GAME STATE AND STORAGE FUNCTIONS
+  //=============================================================================
   
   // Load the system prompt from an external file
   async function loadSystemPrompt() {
@@ -204,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function checkStoredContinuation(stateHash) {
     debug(`Checking for stored continuation with hash: ${stateHash}`);
     try {
-      const response = await fetch(`${STORAGE_SERVER_URL}/continuations/${stateHash}`, {
+      const response = await fetch(`${CONFIG.API_ENDPOINTS.STORAGE_SERVER}/continuations/${stateHash}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json"
@@ -232,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function storeContinuation(stateHash, continuation) {
     debug(`Storing continuation with hash: ${stateHash}`);
     try {
-      const response = await fetch(`${STORAGE_SERVER_URL}/continuations/${stateHash}`, {
+      const response = await fetch(`${CONFIG.API_ENDPOINTS.STORAGE_SERVER}/continuations/${stateHash}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -254,7 +285,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to make a request to the Anthropic API (replaces get_AI_response)
+  //=============================================================================
+  // AI API FUNCTIONS
+  //=============================================================================
+
+  // Function to make a request to the Anthropic API
   async function getAIResponse(systemPrompt, aiResponses, playerResponses) {
     debug("Calling Anthropic API with CORS enabled...");
     try {
@@ -308,18 +343,18 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
 
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch(CONFIG.API_ENDPOINTS.ANTHROPIC, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-api-key": anthropicApiKey,
-          "anthropic-version": "2023-06-01",
+          "anthropic-version": CONFIG.API_VERSIONS.ANTHROPIC,
           "anthropic-dangerous-direct-browser-access": "true"
         },
         body: JSON.stringify({
-          model: "claude-3-opus-20240229",
-          max_tokens: 1000,
-          temperature: 0.7,
+          model: CONFIG.AI_MODELS.CLAUDE,
+          max_tokens: CONFIG.GENERATION_SETTINGS.MAX_TOKENS,
+          temperature: CONFIG.GENERATION_SETTINGS.TEMPERATURE,
           system: systemPrompt,
           messages: messages
         })
@@ -341,23 +376,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to generate an image using the OpenAI API (replaces generate_image)
+  // Function to generate an image using the OpenAI API
   async function generateImage(prompt) {
     debug("Calling OpenAI API for image generation...");
     try {
-      const response = await fetch("https://api.openai.com/v1/images/generations", {
+      const response = await fetch(CONFIG.API_ENDPOINTS.OPENAI_IMAGE, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${openaiApiKey}`,
-          // OpenAI already supports CORS by default, but we'll add this for better error tracking
           "OpenAI-Beta": "browser-direct-access"
         },
         body: JSON.stringify({
-          model: "dall-e-3",
+          model: CONFIG.AI_MODELS.DALLE,
           prompt: prompt,
-          size: "1024x1024",
-          quality: "standard",
+          size: CONFIG.GENERATION_SETTINGS.IMAGE_SIZE,
+          quality: CONFIG.GENERATION_SETTINGS.IMAGE_QUALITY,
           n: 1
         })
       });
@@ -370,13 +404,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await response.json();
       debug("OpenAI image generated successfully!");
-      return data.data[0].url; // OpenAI returns an image URL rather than binary data
+      return data.data[0].url;
     } catch (error) {
       debug(`Error generating image: ${error.message}`);
       console.error("Error generating image:", error);
       throw error;
     }
   }
+
+  //=============================================================================
+  // GAME LOGIC
+  //=============================================================================
 
   // Function to update game state
   async function newState(playerPrompt) {
@@ -503,6 +541,8 @@ document.addEventListener("DOMContentLoaded", () => {
       // Extract objects from story text
       const newObjects = [];
       let match;
+      const objectRegex = CONFIG.REGEX.OBJECT_PATTERN;
+      objectRegex.lastIndex = 0; // Reset regex index
       while ((match = objectRegex.exec(data.story_text)) !== null) {
         newObjects.push(match[1]);
       }
@@ -639,7 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to handle player actions (replaces the /act endpoint)
+  // Function to handle player actions
   async function useItem() {
     const item = itemInput.value;
     const object = objectInput.value;
@@ -705,7 +745,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to update the game UI (enhanced version of the original)
+  //=============================================================================
+  // UI FUNCTIONS
+  //=============================================================================
+
+  // Function to update the game UI
   function updateGameState(data) {
     console.log("Updating game state:", data);
     
@@ -725,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     // Process the story text to highlight objects
     const modifiedStoryText = data.story_text.replace(
-      /<object>(.*?)<\/object>/g,
+      CONFIG.REGEX.OBJECT_PATTERN,
       (match, objectName) => {
         return `<span class="object" id="${objectName
           .toLowerCase()
@@ -784,7 +828,6 @@ document.addEventListener("DOMContentLoaded", () => {
     objectInput.value = "";
   }
 
-  // Function to handle API key submission
   function handleApiKeySubmit(event) {
     debug("Form submit handler triggered");
     event.preventDefault();
@@ -834,7 +877,6 @@ document.addEventListener("DOMContentLoaded", () => {
     startGame();
   }
 
-  // Function to show API key form
   function showApiKeyForm() {
     debug("Showing API key form");
     if (keyFormContainer) {
@@ -852,6 +894,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // This allows the player to see their game while entering API keys
         if (gameContainer) gameContainer.style.display = "block";
         
+        // Remove any existing API message before adding a new one
+        const existingMessage = keyFormContainer.querySelector(".api-message");
+        if (existingMessage) {
+          existingMessage.remove();
+        }
+        
         // Add a message indicating they need keys to continue
         const apiMessage = document.createElement("div");
         apiMessage.classList.add("api-message");
@@ -864,7 +912,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Set up the API key form
   function setupApiKeyForm() {
     debug("Setting up API key form");
     
@@ -910,11 +957,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Initialize the application
+  //=============================================================================
+  // INITIALIZATION
+  //=============================================================================
+
   function init() {
     debug("Initializing application");
     
-    // Make sure we have references to all DOM elements
+    // Get DOM element references
+    appContainer = document.getElementById("app-container");
     gameContainer = document.getElementById("game-container");
     storyElement = document.getElementById("story");
     imageContainer = document.getElementById("image-container");
@@ -923,16 +974,26 @@ document.addEventListener("DOMContentLoaded", () => {
     itemInput = document.getElementById("item-input");
     objectInput = document.getElementById("object-input");
     useButton = document.getElementById("use-button");
+    keyFormContainer = document.getElementById("key-form-container");
     
-    // Log whether we found each element
-    if (!gameContainer) debug("ERROR: game-container not found");
-    if (!storyElement) debug("ERROR: story element not found");
-    if (!imageContainer) debug("ERROR: image-container not found");
-    if (!inventoryElement) debug("ERROR: inventory element not found");
-    if (!objectsElement) debug("ERROR: objects element not found");
-    if (!itemInput) debug("ERROR: item-input not found");
-    if (!objectInput) debug("ERROR: object-input not found");
-    if (!useButton) debug("ERROR: use-button not found");
+    // Check that we have all required elements
+    const requiredElements = {
+      "app-container": appContainer,
+      "game-container": gameContainer,
+      "story": storyElement,
+      "image-container": imageContainer,
+      "inventory": inventoryElement,
+      "objects": objectsElement,
+      "item-input": itemInput,
+      "object-input": objectInput,
+      "use-button": useButton,
+      "key-form-container": keyFormContainer
+    };
+    
+    // Log any missing elements
+    for (const [name, element] of Object.entries(requiredElements)) {
+      if (!element) debug(`ERROR: ${name} not found`);
+    }
     
     // Set up the API key form first - this is the entry point
     setupApiKeyForm();
