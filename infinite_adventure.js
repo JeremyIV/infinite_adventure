@@ -132,6 +132,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let anthropicApiKey = "";
   let openaiApiKey = "";
   
+  // Storage server settings
+  const STORAGE_SERVER_URL = "http://localhost:5000/api"; // Base URL for the storage server
+  
   // Game state (replaces server-side state)
   let gameState = {
     inventory: [],
@@ -162,16 +165,93 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to get a hash string (for image tracking)
+  // Function to get a hash string using FNV-1a 64-bit algorithm for better collision resistance
   function getHashString(data) {
-    let hash = 0;
     const str = JSON.stringify(data);
+    
+    // Using BigInt for 64-bit operations
+    const FNV_PRIME = 1099511628211n;
+    const OFFSET_BASIS = 14695981039346656037n;
+    
+    let hash = OFFSET_BASIS;
+    
+    // Process each character in the string
     for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+      // Get the character code and convert to BigInt
+      const charCode = BigInt(str.charCodeAt(i));
+      
+      // FNV-1a hash computation
+      hash = hash ^ charCode;
+      hash = (hash * FNV_PRIME) % (1n << 64n); // Keep to 64 bits
     }
-    return hash.toString(16);
+    
+    // Convert to hex string and ensure it's the right length (16 chars for 64 bits)
+    return hash.toString(16).padStart(16, '0');
+  }
+  
+  // Function to get the hash of the current game state
+  function getGameStateHash() {
+    // Create a minimal version of the game state for hashing
+    // Include only what's needed to uniquely identify this state
+    const stateToHash = {
+      assistant_responses: gameState.assistant_responses,
+      user_responses: gameState.user_responses
+    };
+    return getHashString(stateToHash);
+  }
+  
+  // Function to check if a continuation exists in the storage server
+  async function checkStoredContinuation(stateHash) {
+    debug(`Checking for stored continuation with hash: ${stateHash}`);
+    try {
+      const response = await fetch(`${STORAGE_SERVER_URL}/continuations/${stateHash}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      });
+      
+      if (response.ok) {
+        debug("Found stored continuation");
+        return await response.json();
+      } else if (response.status === 404) {
+        debug("No stored continuation found");
+        return null;
+      } else {
+        debug(`Error checking stored continuation: ${response.status}`);
+        throw new Error(`Server error: ${response.status}`);
+      }
+    } catch (error) {
+      debug(`Error checking stored continuation: ${error.message}`);
+      console.error("Error checking stored continuation:", error);
+      return null; // Return null on error to allow fallback to API
+    }
+  }
+  
+  // Function to store a continuation in the storage server
+  async function storeContinuation(stateHash, continuation) {
+    debug(`Storing continuation with hash: ${stateHash}`);
+    try {
+      const response = await fetch(`${STORAGE_SERVER_URL}/continuations/${stateHash}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(continuation)
+      });
+      
+      if (response.ok) {
+        debug("Successfully stored continuation");
+        return true;
+      } else {
+        debug(`Error storing continuation: ${response.status}`);
+        throw new Error(`Server error: ${response.status}`);
+      }
+    } catch (error) {
+      debug(`Error storing continuation: ${error.message}`);
+      console.error("Error storing continuation:", error);
+      return false;
+    }
   }
 
   // Function to make a request to the Anthropic API (replaces get_AI_response)
@@ -298,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to update game state (replaces new_state in server.py)
+  // Function to update game state
   async function newState(playerPrompt) {
     debug(`Updating game state with prompt: ${playerPrompt || 'Initial State'}`);
     console.log("Player prompt:", playerPrompt);
@@ -307,19 +387,107 @@ document.addEventListener("DOMContentLoaded", () => {
       gameState.user_responses.push(playerPrompt);
     }
     
-    // Get AI response
-    const response = await getAIResponse(
-      gameState.system_prompt,
-      gameState.assistant_responses,
-      gameState.user_responses
-    );
+    // Get the current state hash before making any changes
+    const stateHash = getGameStateHash();
+    debug(`Current game state hash: ${stateHash}`);
     
-    console.log("AI Response:", response);
+    // First check if this continuation already exists in storage
+    let storedContinuation = null;
+    try {
+      storedContinuation = await checkStoredContinuation(stateHash);
+    } catch (error) {
+      debug(`Error checking stored continuation: ${error.message}`);
+      // Continue with API generation as fallback
+    }
     
-    // Parse the response
-    const data = JSON.parse(response);
+    let data;
     let imageUrl = null;
+    let response;
     
+    // If we found a stored continuation, use it
+    if (storedContinuation) {
+      debug("Using stored continuation");
+      response = storedContinuation.response;
+      data = JSON.parse(response);
+      
+      // If there's a stored image URL, use it
+      if (storedContinuation.image_url) {
+        imageUrl = storedContinuation.image_url;
+        debug("Using stored image URL");
+      }
+    } else {
+      debug("No stored continuation found, generating new content");
+      
+      // Check if API keys are available
+      if (!anthropicApiKey || !openaiApiKey) {
+        debug("No API keys available and no stored continuation found");
+        
+        // If the player has already taken actions, we can revert to the previous state
+        if (gameState.user_responses.length > 1) {
+          // Remove the last user response
+          gameState.user_responses.pop();
+          
+          // Show a message asking the user to enter API keys or try a different action
+          return {
+            image_url: null,
+            new_scene: false,
+            story_text: "There's no pre-generated content available for this action. Please either: 1) Enter your API keys to continue this path, or 2) Try a different action.",
+            inventory: gameState.inventory,
+            objects: gameState.objects,
+            prompt_for_keys: true
+          };
+        } else {
+          // This is the initial state, so we must have API keys
+          debug("No API keys available for initial state");
+          return {
+            image_url: null,
+            new_scene: false,
+            story_text: "To start a new adventure, you need to provide API keys.",
+            inventory: [],
+            objects: [],
+            prompt_for_keys: true
+          };
+        }
+      }
+      
+      // Generate new content using API calls
+      try {
+        response = await getAIResponse(
+          gameState.system_prompt,
+          gameState.assistant_responses,
+          gameState.user_responses
+        );
+        
+        console.log("AI Response:", response);
+        
+        // Parse the response
+        data = JSON.parse(response);
+        
+        // Generate image if needed
+        if (data.image_prompt) {
+          imageUrl = await generateImage(data.image_prompt);
+          debug("Generated new image");
+        }
+        
+        // Store the continuation for future use
+        await storeContinuation(stateHash, {
+          response: response,
+          image_url: imageUrl
+        });
+        
+      } catch (error) {
+        debug(`Error generating content: ${error.message}`);
+        
+        // If there was an error, remove the last user response
+        if (playerPrompt !== null) {
+          gameState.user_responses.pop();
+        }
+        
+        throw error;
+      }
+    }
+    
+    // Process the result
     if (data.no_progress) {
       // If no progress, remove the last user response
       gameState.user_responses.pop();
@@ -347,10 +515,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Update inventory
       gameState.inventory = data.inventory || [];
       
-      // Generate image if needed
-      if (data.image_prompt) {
+      // Store image URL in cache if we generated a new one
+      if (data.image_prompt && imageUrl) {
         const hash = getHashString(data.image_prompt);
-        imageUrl = await generateImage(data.image_prompt);
         gameState.image_prompts[hash] = imageUrl;
       }
     }
@@ -390,6 +557,42 @@ document.addEventListener("DOMContentLoaded", () => {
       // Load the system prompt - this is now async
       await loadSystemPrompt();
       debug("System prompt loaded");
+      
+      // Get the initial game state hash (empty state)
+      const initialStateHash = getGameStateHash();
+      
+      // Check if we have a stored initial state
+      let storedInitialState = null;
+      try {
+        storedInitialState = await checkStoredContinuation(initialStateHash);
+      } catch (error) {
+        debug(`Error checking for stored initial state: ${error.message}`);
+        // Continue with API generation if available
+      }
+      
+      // If we have stored initial state, we can start without API keys
+      if (storedInitialState) {
+        debug("Found stored initial state, using it");
+      } else if (!anthropicApiKey || !openaiApiKey) {
+        debug("No API keys available and no stored initial state");
+        
+        // Clear any loading indicators
+        if (storyElement && storyElement.querySelector(".loading")) {
+          storyElement.removeChild(storyElement.querySelector(".loading"));
+        }
+        
+        // Show a message asking for API keys
+        if (storyElement) {
+          const errorElement = document.createElement("div");
+          errorElement.classList.add("error");
+          errorElement.textContent = "API keys are required to start a new adventure. Please enter your API keys.";
+          storyElement.appendChild(errorElement);
+        }
+        
+        // Show API key form
+        showApiKeyForm();
+        return;
+      }
       
       // Get the initial game state
       const result = await newState(null);
@@ -535,6 +738,21 @@ document.addEventListener("DOMContentLoaded", () => {
     textElement.innerHTML = modifiedStoryText;
     storyTextElement.appendChild(textElement);
     
+    // If we need to prompt for API keys, add a button
+    if (data.prompt_for_keys) {
+      const keyPromptElement = document.createElement("div");
+      keyPromptElement.classList.add("key-prompt");
+      
+      const enterKeysButton = document.createElement("button");
+      enterKeysButton.textContent = "Enter API Keys";
+      enterKeysButton.addEventListener("click", () => {
+        showApiKeyForm();
+      });
+      
+      keyPromptElement.appendChild(enterKeysButton);
+      storyTextElement.appendChild(keyPromptElement);
+    }
+    
     // Add the story element to the page
     storyElement.appendChild(storyTextElement);
     
@@ -619,8 +837,31 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to show API key form
   function showApiKeyForm() {
     debug("Showing API key form");
-    if (keyFormContainer) keyFormContainer.style.display = "block";
-    if (gameContainer) gameContainer.style.display = "none";
+    if (keyFormContainer) {
+      keyFormContainer.style.display = "block";
+      
+      // Modify the header text to indicate entering keys to continue
+      const formTitle = keyFormContainer.querySelector("h1");
+      if (formTitle) {
+        formTitle.textContent = "Enter API Keys to Continue";
+      }
+      
+      // If there's game content already, don't hide it
+      if (gameState.assistant_responses.length > 0) {
+        debug("Keeping game container visible");
+        // This allows the player to see their game while entering API keys
+        if (gameContainer) gameContainer.style.display = "block";
+        
+        // Add a message indicating they need keys to continue
+        const apiMessage = document.createElement("div");
+        apiMessage.classList.add("api-message");
+        apiMessage.textContent = "Enter your API keys to continue your adventure with this action.";
+        keyFormContainer.querySelector("form").prepend(apiMessage);
+      } else {
+        // For a new game, hide game container (default behavior)
+        if (gameContainer) gameContainer.style.display = "none";
+      }
+    }
   }
 
   // Set up the API key form

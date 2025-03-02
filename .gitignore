@@ -21,3 +21,21 @@ pids
 
 # Cache files
 .cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# SQLite database files
+*.db
+*.sqlite3

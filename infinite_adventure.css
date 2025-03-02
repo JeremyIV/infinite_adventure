@@ -287,6 +287,40 @@ img {
   border-radius: 3px;
 }
 
+/* Styling for API key prompt in story */
+.key-prompt {
+  margin: 15px 0;
+  padding: 10px;
+  background-color: #001a00;
+  border: 1px dashed #0f0;
+  text-align: center;
+}
+
+.key-prompt button {
+  padding: 8px 16px;
+  background-color: #003300;
+  color: #0f0;
+  border: 1px solid #0f0;
+  cursor: pointer;
+  margin-top: 5px;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.key-prompt button:hover {
+  background-color: #004400;
+}
+
+/* API message in key form when continuing */
+.api-message {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #001100;
+  border-left: 3px solid #0f0;
+  color: #0f0;
+  text-align: center;
+  font-weight: bold;
+}
+
 /* Make inputs consistent */
 input[type="password"] {
   padding: 5px;
