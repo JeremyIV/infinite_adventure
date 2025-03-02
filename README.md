@@ -26,11 +26,22 @@ Infinite Adventure is a browser-based text adventure game that uses AI to genera
 
 ## Project Structure
 
-- `infinite_adventure.js` - The main frontend game logic
+- `index.html` - Game interface
 - `infinite_adventure.css` - Game styling
 - `system_prompt.txt` - Controls the game's theme and rules
-- `storage_server.py` - Backend server for storing and retrieving shared game content
-- `index.html` - Game interface
+- `js/` - Modular JavaScript implementation:
+  - `main.js` - Main entry point
+  - `config.js` - Configuration and constants
+  - `debug.js` - Debugging utilities
+  - `storage.js` - Storage utilities
+  - `api.js` - API interactions
+  - `apiKeys.js` - API key management
+  - `gameState.js` - Game state management
+  - `ui.js` - UI management
+  - `game.js` - Game logic and initialization
+- `storage_server.py` - Backend server for storing game content
+- `requirements.txt` - Python dependencies for the server
+- `SERVER_README.md` - Instructions for the storage server
 
 ## Features
 
