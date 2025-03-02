@@ -3,45 +3,44 @@
  */
 import { CONFIG } from './config.js';
 import { debug } from './debug.js';
-import { setCookie, getCookie, deleteCookie } from './storage.js';
 
 /**
- * Save API keys to cookies if remember is checked
+ * Save API keys to localStorage if remember is checked
  * @param {string} anthropicKey Anthropic API key
  * @param {string} openaiKey OpenAI API key
  */
 export function saveApiKeys(anthropicKey, openaiKey) {
   const rememberKeys = document.getElementById("remember-keys").checked;
   if (rememberKeys) {
-    setCookie("anthropicApiKey", anthropicKey, CONFIG.COOKIE_EXPIRY_DAYS);
-    setCookie("openaiApiKey", openaiKey, CONFIG.COOKIE_EXPIRY_DAYS);
-    debug("API keys saved to cookies");
+    localStorage.setItem("anthropicApiKey", anthropicKey);
+    localStorage.setItem("openaiApiKey", openaiKey);
+    debug("API keys saved to localStorage");
   } else {
-    deleteCookie("anthropicApiKey");
-    deleteCookie("openaiApiKey");
-    debug("API key cookies deleted (remember keys unchecked)");
+    localStorage.removeItem("anthropicApiKey");
+    localStorage.removeItem("openaiApiKey");
+    debug("API keys removed from localStorage (remember keys unchecked)");
   }
 }
 
 /**
- * Load API keys from cookies if available
+ * Load API keys from localStorage if available
  * @returns {Object} Object with anthropicKey and openaiKey properties
  */
 export function loadApiKeys() {
-  const anthropicKey = getCookie("anthropicApiKey");
-  const openaiKey = getCookie("openaiApiKey");
+  const anthropicKey = localStorage.getItem("anthropicApiKey");
+  const openaiKey = localStorage.getItem("openaiApiKey");
   
   const anthropicKeyInput = document.getElementById("anthropic-key");
   const openaiKeyInput = document.getElementById("openai-key");
   
   if (anthropicKey && anthropicKeyInput) {
     anthropicKeyInput.value = anthropicKey;
-    debug("Anthropic API key loaded from cookie");
+    debug("Anthropic API key loaded from localStorage");
   }
   
   if (openaiKey && openaiKeyInput) {
     openaiKeyInput.value = openaiKey;
-    debug("OpenAI API key loaded from cookie");
+    debug("OpenAI API key loaded from localStorage");
   }
   
   return { anthropicKey, openaiKey };
@@ -51,8 +50,8 @@ export function loadApiKeys() {
  * Clear saved API keys
  */
 export function clearSavedApiKeys() {
-  deleteCookie("anthropicApiKey");
-  deleteCookie("openaiApiKey");
+  localStorage.removeItem("anthropicApiKey");
+  localStorage.removeItem("openaiApiKey");
   
   const anthropicKeyInput = document.getElementById("anthropic-key");
   const openaiKeyInput = document.getElementById("openai-key");
