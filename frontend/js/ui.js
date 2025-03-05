@@ -61,6 +61,21 @@ export function updateGameState(data) {
     
     keyPromptElement.appendChild(enterKeysButton);
     storyTextElement.appendChild(keyPromptElement);
+    
+    // If an action was blocked, provide additional context
+    if (data.action_blocked) {
+      const actionBlockedElement = document.createElement("div");
+      actionBlockedElement.classList.add("action-blocked");
+      
+      if (data.attempted_action) {
+        actionBlockedElement.innerHTML = `<p>Your action "<strong>${data.attempted_action}</strong>" requires API keys because it hasn't been explored before.</p>
+          <p>You can either enter API keys or try a different action.</p>`;
+      } else {
+        actionBlockedElement.innerHTML = "<p>Playing without API keys is possible, but limited to pre-explored content.</p>";
+      }
+      
+      storyTextElement.appendChild(actionBlockedElement);
+    }
   }
   
   // Add the story element to the page
@@ -96,16 +111,21 @@ export function updateGameState(data) {
 
 /**
  * Show the API key form
+ * @param {boolean} initialState If true, this is for the initial game start
  */
-export function showApiKeyForm() {
+export function showApiKeyForm(initialState = false) {
   debug("Showing API key form");
   if (keyFormContainer) {
     keyFormContainer.style.display = "block";
     
-    // Modify the header text to indicate entering keys to continue
+    // Modify the header text based on context
     const formTitle = keyFormContainer.querySelector("h1");
     if (formTitle) {
-      formTitle.textContent = "Enter API Keys to Continue";
+      if (initialState) {
+        formTitle.textContent = "Start Your Adventure";
+      } else {
+        formTitle.textContent = "Enter API Keys to Continue";
+      }
     }
     
     // If there's game content already, don't hide it
@@ -123,11 +143,42 @@ export function showApiKeyForm() {
       // Add a message indicating they need keys to continue
       const apiMessage = document.createElement("div");
       apiMessage.classList.add("api-message");
-      apiMessage.textContent = "Enter your API keys to continue your adventure with this action.";
+      
+      // Check if there was a specific blocked action
+      if (gameState.currentBlockedAction) {
+        apiMessage.innerHTML = `Enter your API keys to continue with the action: <strong>"${gameState.currentBlockedAction}"</strong>`;
+      } else {
+        apiMessage.textContent = "Enter your API keys to continue your adventure with this action.";
+      }
+      
       keyFormContainer.querySelector("form").prepend(apiMessage);
+      
+      // Update start button text to "Continue"
+      const startButton = document.getElementById("start-button");
+      if (startButton) {
+        startButton.textContent = "Continue Adventure";
+      }
     } else {
       // For a new game, hide game container (default behavior)
       if (gameContainer) gameContainer.style.display = "none";
+      
+      // Make sure start button says "Start Adventure"
+      const startButton = document.getElementById("start-button");
+      if (startButton) {
+        startButton.textContent = "Start Adventure";
+      }
+    }
+    
+    // Update the keyless play note based on context
+    const keylessPlayNote = keyFormContainer.querySelector(".keyless-play-note");
+    if (keylessPlayNote) {
+      if (initialState) {
+        keylessPlayNote.innerHTML = "<strong>No pre-generated starting adventures available.</strong> You'll need API keys to start a new adventure, or try again later.";
+        keylessPlayNote.classList.add("keyless-warning");
+      } else {
+        keylessPlayNote.innerHTML = "You can start without API keys, but will be limited to pre-generated content only.";
+        keylessPlayNote.classList.remove("keyless-warning");
+      }
     }
   }
 }
@@ -185,6 +236,43 @@ export async function useItem(anthropicApiKey, openaiApiKey) {
     
     // Process the action
     const userResponse = `use ${item} on ${object}`;
+    
+    // If no API keys are provided, pre-check if this action has a stored continuation
+    if (!anthropicApiKey || !openaiApiKey) {
+      // Import function here to avoid circular dependency
+      const { checkActionAvailability } = await import('./storage.js');
+      
+      // Check if this action is available in storage
+      const isAvailable = await checkActionAvailability(
+        userResponse, 
+        gameState.assistant_responses,
+        gameState.user_responses
+      );
+      
+      if (!isAvailable) {
+        // Remove the thinking indicator
+        storyElement.removeChild(thinkingElement);
+        
+        // Store the blocked action in gameState for later retrieval
+        gameState.currentBlockedAction = userResponse;
+        
+        // Show a message that this action requires API keys
+        updateGameState({
+          image_url: null,
+          new_scene: false,
+          story_text: "This action hasn't been explored before and requires API keys to continue.",
+          inventory: gameState.inventory,
+          objects: gameState.objects,
+          prompt_for_keys: true,
+          action_blocked: true,
+          attempted_action: userResponse
+        });
+        
+        return;
+      }
+    }
+    
+    // Proceed with the action (either we have API keys or a continuation exists)
     const result = await newState(userResponse, anthropicApiKey, openaiApiKey);
     
     // Remove thinking indicator
@@ -194,6 +282,10 @@ export async function useItem(anthropicApiKey, openaiApiKey) {
     updateGameState(result);
   } catch (error) {
     console.error("Error processing action:", error);
+    
+    // Remove thinking indicator if it exists
+    const thinkingEl = storyElement.querySelector(".thinking");
+    if (thinkingEl) storyElement.removeChild(thinkingEl);
     
     const errorElement = document.createElement("div");
     errorElement.classList.add("error");
@@ -223,15 +315,20 @@ export async function handleApiKeySubmit(event) {
   const anthKey = anthropicKeyElement.value.trim();
   const oaiKey = openaiKeyElement.value.trim();
   
-  if (!anthKey || !oaiKey) {
-    alert("Please enter both API keys to continue.");
-    throw new Error("API keys not provided");
+  // Keyless play - allow empty keys (player will be limited to pre-generated content)
+  if (anthKey || oaiKey) {
+    // If they entered any keys at all, both must be provided
+    if (!anthKey || !oaiKey) {
+      alert("If you want to use API keys, please enter BOTH Anthropic and OpenAI keys.");
+      throw new Error("Incomplete API keys provided");
+    }
+    
+    debug("API keys entered, saving them...");
+    // Save to cookies if remember is checked
+    saveApiKeys(anthKey, oaiKey);
+  } else {
+    debug("No API keys entered, using keyless mode");
   }
-  
-  debug("API keys entered, starting game...");
-  
-  // Save to cookies if remember is checked
-  saveApiKeys(anthKey, oaiKey);
   
   // Hide API key form and show game
   if (keyFormContainer) {

@@ -15,14 +15,15 @@
       <form id="api-key-form">
         <div class="form-group">
           <label for="anthropic-key">Anthropic API Key:</label>
-          <input type="password" id="anthropic-key" placeholder="sk-ant-..." required>
+          <input type="password" id="anthropic-key" placeholder="sk-ant-...">
           <small>Used for text generation with Claude</small>
         </div>
         <div class="form-group">
           <label for="openai-key">OpenAI API Key:</label>
-          <input type="password" id="openai-key" placeholder="sk-..." required>
+          <input type="password" id="openai-key" placeholder="sk-...">
           <small>Used for image generation with DALL-E</small>
         </div>
+        <p class="keyless-play-note">You can start without API keys, but will be limited to pre-generated content only.</p>
         <div class="form-group checkbox-group">
           <input type="checkbox" id="remember-keys" checked>
           <label for="remember-keys">Remember my API keys</label>

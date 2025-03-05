@@ -71,16 +71,16 @@ export async function startGame() {
         storyElement.removeChild(storyElement.querySelector(".loading"));
       }
       
-      // Show a message asking for API keys
+      // Show a message explaining the situation
       if (storyElement) {
-        const errorElement = document.createElement("div");
-        errorElement.classList.add("error");
-        errorElement.textContent = "API keys are required to start a new adventure. Please enter your API keys.";
-        storyElement.appendChild(errorElement);
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("info");
+        messageElement.innerHTML = "No stored initial adventure found. <strong>You'll need API keys to generate a new adventure path</strong>, or you can try again later when more pre-generated content is available.";
+        storyElement.appendChild(messageElement);
       }
       
       // Show API key form
-      showApiKeyForm();
+      showApiKeyForm(true);
       return;
     }
     
@@ -156,8 +156,33 @@ function setupApiKeyForm() {
       anthropicApiKey = keys.anthropicApiKey;
       openaiApiKey = keys.openaiApiKey;
       
-      // Start the game
-      startGame();
+      // Determine if we're continuing or starting fresh
+      if (gameState.assistant_responses.length > 0) {
+        debug("Continuing existing game after API key entry");
+        
+        // Check if there was a blocked action we should retry
+        if (gameState.currentBlockedAction) {
+          const blockedAction = gameState.currentBlockedAction;
+          debug(`Retrying previously blocked action: ${blockedAction}`);
+          
+          // Reset the blocked action
+          gameState.currentBlockedAction = null;
+          
+          // Use setTimeout to ensure the UI is updated before attempting the action
+          setTimeout(() => {
+            // Create a custom event to trigger the action
+            const event = new CustomEvent('retry-action', { 
+              detail: { action: blockedAction } 
+            });
+            document.dispatchEvent(event);
+          }, 100);
+        }
+        // Otherwise just hide the form and continue
+      } else {
+        // Start a new game
+        debug("Starting new game after API key entry");
+        startGame();
+      }
     } catch (error) {
       debug(`Error handling API key submission: ${error.message}`);
     }
@@ -174,8 +199,33 @@ function setupApiKeyForm() {
         anthropicApiKey = keys.anthropicApiKey;
         openaiApiKey = keys.openaiApiKey;
         
-        // Start the game
-        startGame();
+        // Determine if we're continuing or starting fresh
+        if (gameState.assistant_responses.length > 0) {
+          debug("Continuing existing game after API key entry");
+          
+          // Check if there was a blocked action we should retry
+          if (gameState.currentBlockedAction) {
+            const blockedAction = gameState.currentBlockedAction;
+            debug(`Retrying previously blocked action: ${blockedAction}`);
+            
+            // Reset the blocked action
+            gameState.currentBlockedAction = null;
+            
+            // Use setTimeout to ensure the UI is updated before attempting the action
+            setTimeout(() => {
+              // Create a custom event to trigger the action
+              const event = new CustomEvent('retry-action', { 
+                detail: { action: blockedAction } 
+              });
+              document.dispatchEvent(event);
+            }, 100);
+          }
+          // Otherwise just hide the form and continue
+        } else {
+          // Start a new game
+          debug("Starting new game after API key entry");
+          startGame();
+        }
       } catch (error) {
         debug(`Error handling API key submission: ${error.message}`);
       }
@@ -222,6 +272,41 @@ export function initializeGame() {
       if (itemInput && objectInput && itemInput.value && objectInput.value) {
         useItem(anthropicApiKey, openaiApiKey);
       }
+    }
+  });
+  
+  // Add custom event listener for retrying actions after API keys are entered
+  document.addEventListener("retry-action", (event) => {
+    debug(`Received retry-action event for: ${event.detail.action}`);
+    
+    // Parse the action to extract item and object
+    // Format is "use [item] on [object]"
+    const actionText = event.detail.action;
+    const match = actionText.match(/use\s+(.+?)\s+on\s+(.+)/i);
+    
+    if (match && match.length === 3) {
+      const item = match[1];
+      const object = match[2];
+      
+      debug(`Parsed action: item=${item}, object=${object}`);
+      
+      // Show a message indicating we're retrying the action
+      const messageElement = document.createElement("div");
+      messageElement.classList.add("info", "retry-action");
+      messageElement.textContent = `Retrying action: Use ${item} on ${object}`;
+      storyElement.appendChild(messageElement);
+      
+      // Small delay to ensure the message is visible
+      setTimeout(() => {
+        // Set the inputs and trigger the action
+        if (itemInput) itemInput.value = item;
+        if (objectInput) objectInput.value = object;
+        
+        // Use the item
+        useItem(anthropicApiKey, openaiApiKey);
+      }, 500);
+    } else {
+      debug("Could not parse action: " + actionText);
     }
   });
   

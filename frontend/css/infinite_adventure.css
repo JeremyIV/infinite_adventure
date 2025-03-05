@@ -38,7 +38,66 @@ input[type="text"] {
   margin-right: 10px;
   background-color: #000;
   color: #0f0;
+}
+
+/* Styles for API key prompts and blocked action messages */
+.key-prompt {
+  margin: 15px 0;
+  padding: 10px;
   border: 1px solid #0f0;
+  border-radius: 5px;
+}
+
+.action-blocked {
+  margin: 10px 0;
+  padding: 10px;
+  border-left: 3px solid #ff8c00;
+  background-color: rgba(255, 140, 0, 0.1);
+  color: #ff8c00;
+}
+
+.action-blocked p {
+  margin: 5px 0;
+}
+
+.action-blocked strong {
+  font-weight: bold;
+  font-style: italic;
+}
+
+/* Styles for keyless play information */
+.keyless-play-note {
+  margin: 10px 0;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: rgba(15, 255, 15, 0.1);
+  border-left: 3px solid #0f0;
+  font-size: 0.9em;
+}
+
+.keyless-warning {
+  background-color: rgba(255, 140, 0, 0.1);
+  border-left: 3px solid #ff8c00;
+  color: #ff8c00;
+}
+
+.info {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: rgba(0, 120, 255, 0.1);
+  border-left: 3px solid #0078ff;
+  color: #0078ff;
+}
+
+/* Animation for retry action */
+@keyframes highlight {
+  0% { background-color: rgba(0, 255, 0, 0.3); }
+  100% { background-color: transparent; }
+}
+
+.retry-action {
+  animation: highlight 2s ease-out;
 }
 
 button {

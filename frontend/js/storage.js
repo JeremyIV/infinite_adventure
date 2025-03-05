@@ -4,6 +4,7 @@
  */
 import { CONFIG } from './config.js';
 import { debug } from './debug.js';
+import { getGameStateHash } from './gameState.js';
 
 /**
  * Set a cookie with given name, value, and expiry days
@@ -135,5 +136,44 @@ export async function storeContinuation(stateHash, continuation) {
     debug(`Error storing continuation: ${error.message}`);
     console.error("Error storing continuation:", error);
     return false;
+  }
+}
+
+/**
+ * Check if a potential action would have a stored continuation
+ * @param {string} userAction The action the user is about to take
+ * @param {Array} currentAssistantResponses The current assistant responses
+ * @param {Array} currentUserResponses The current user responses
+ * @returns {Promise<boolean>} True if the action has a stored continuation
+ */
+export async function checkActionAvailability(userAction, currentAssistantResponses, currentUserResponses) {
+  debug(`Checking if action "${userAction}" has a stored continuation`);
+  
+  // Create a temporary clone of the current state with the potential action
+  const tempUserResponses = [...currentUserResponses, userAction];
+  
+  // Create a minimal version of the state for hashing
+  const stateToHash = {
+    assistant_responses: currentAssistantResponses,
+    user_responses: tempUserResponses
+  };
+  
+  // Generate a hash for this potential state
+  const stateHash = getHashString(stateToHash);
+  debug(`Potential state hash: ${stateHash}`);
+  
+  // Check if this continuation exists
+  try {
+    const continuation = await checkStoredContinuation(stateHash);
+    if (continuation) {
+      debug("This action has a stored continuation");
+      return true;
+    } else {
+      debug("This action does not have a stored continuation");
+      return false;
+    }
+  } catch (error) {
+    debug(`Error checking action availability: ${error.message}`);
+    return false; // Default to unavailable on error
   }
 }

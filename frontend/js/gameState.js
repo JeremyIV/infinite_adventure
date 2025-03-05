@@ -14,7 +14,8 @@ export const gameState = {
   system_prompt: "",
   assistant_responses: [],
   user_responses: [],
-  image_prompts: {}
+  image_prompts: {},
+  currentBlockedAction: null  // Stores the current action that was blocked due to missing API keys
 };
 
 /**
@@ -59,6 +60,7 @@ export function resetGameState() {
   gameState.assistant_responses = [];
   gameState.user_responses = [];
   gameState.image_prompts = {};
+  gameState.currentBlockedAction = null;
   debug("Game state reset");
 }
 
@@ -117,25 +119,31 @@ export async function newState(playerPrompt, anthropicApiKey, openaiApiKey) {
         // Remove the last user response
         gameState.user_responses.pop();
         
+        // Store the attempted action for the UI
+        const attemptedAction = playerPrompt;
+        
         // Show a message asking the user to enter API keys or try a different action
         return {
           image_url: null,
           new_scene: false,
-          story_text: "There's no pre-generated content available for this action. Please either: 1) Enter your API keys to continue this path, or 2) Try a different action.",
+          story_text: "This path hasn't been explored before and requires API keys to continue. Please either: 1) Enter your API keys to continue this path, or 2) Try a different action that may have pre-generated content.",
           inventory: gameState.inventory,
           objects: gameState.objects,
-          prompt_for_keys: true
+          prompt_for_keys: true,
+          action_blocked: true,
+          attempted_action: attemptedAction
         };
       } else {
-        // This is the initial state, so we must have API keys
+        // This is the initial state, so we need either API keys or stored initial state
         debug("No API keys available for initial state");
         return {
           image_url: null,
           new_scene: false,
-          story_text: "To start a new adventure, you need to provide API keys.",
+          story_text: "To start a new adventure, you need to provide API keys or select a pre-generated path.",
           inventory: [],
           objects: [],
-          prompt_for_keys: true
+          prompt_for_keys: true,
+          action_blocked: true
         };
       }
     }
