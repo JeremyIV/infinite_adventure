@@ -6,7 +6,7 @@ export const CONFIG = {
   API_ENDPOINTS: {
     ANTHROPIC: "https://api.anthropic.com/v1/messages",
     OPENAI_IMAGE: "https://api.openai.com/v1/images/generations",
-    STORAGE_SERVER: "https://infinite-adventure-1lggflpev-jeremys-projects-37bbb7cf.vercel.app/api"
+    STORAGE_SERVER: "https://infinite-adventure-d82coqtck-jeremys-projects-37bbb7cf.vercel.app/api"
     // STORAGE_SERVER: "http://localhost:3000/api"
   },
   API_VERSIONS: {

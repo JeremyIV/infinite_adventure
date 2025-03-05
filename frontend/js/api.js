@@ -152,32 +152,33 @@ async function storeImage(imageUrl) {
   debug("Storing image to local database...");
   try {
     debug(`Uploading image from URL: ${imageUrl}`);
-    const response = await fetch(`${CONFIG.API_ENDPOINTS.STORAGE_SERVER}/images/upload`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        url: imageUrl
-      }),
-      mode: "cors"
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      debug(`Image storage error (${response.status}): ${errorText}`);
-      console.warn("Failed to store image locally, using original URL:", errorText);
-      // Return original URL as fallback
-      return imageUrl;
-    }
-
+    
+    // Try with cors mode first
     try {
+      const response = await fetch(`${CONFIG.API_ENDPOINTS.STORAGE_SERVER}/images/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          url: imageUrl
+        }),
+        mode: "cors",
+        credentials: "omit" // Don't send cookies
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        debug(`Image storage error (${response.status}): ${errorText}`);
+        throw new Error(`Failed to store image: ${errorText}`);
+      }
+
       const data = await response.json();
       debug(`Image stored successfully with ID: ${data.id}`);
       
       if (!data.url || !data.id) {
         debug("Invalid response from image upload endpoint - missing url or id");
-        return imageUrl; // Fallback to original URL
+        throw new Error("Invalid response from image upload endpoint");
       }
       
       // Convert relative URL to absolute URL including the base storage server URL
@@ -185,9 +186,14 @@ async function storeImage(imageUrl) {
       const fullUrl = `${storageBaseUrl}${data.url}`;
       debug(`Generated full image URL: ${fullUrl}`);
       return fullUrl;
-    } catch (parseError) {
-      debug(`Error parsing JSON response: ${parseError.message}`);
-      return imageUrl; // Fallback to original URL
+    } catch (error) {
+      // If CORS or other error occurred, try a proxy approach (server to server)
+      debug(`First upload attempt failed: ${error.message}. Trying alternative approach...`);
+      
+      // You could implement a proxy endpoint here that would handle the upload server-side
+      // For now, we'll just fallback to the original URL
+      console.warn("Image upload failed, using original URL:", error);
+      return imageUrl;
     }
   } catch (error) {
     debug(`Error storing image: ${error.message}`);

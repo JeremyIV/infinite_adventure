@@ -10,7 +10,7 @@ const handler = (req, res) => {
 
   console.log("Health check requested");
   return res.status(200).json({
-    status: 'healthy',
+    status: 'healthy (wenis)',
     version: APP_VERSION
   });
 };
