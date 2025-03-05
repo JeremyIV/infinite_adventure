@@ -1,4 +1,4 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, GridFSBucket } = require('mongodb');
 
 // Connection URI - we'll get this from environment variables in production
 const uri = process.env.MONGODB_URI;
@@ -26,7 +26,14 @@ async function connectToDatabase() {
   await client.connect();
 
   const db = client.db(dbName);
-  cachedDb = { client, db, collection: db.collection(collectionName) };
+  const bucket = new GridFSBucket(db, { bucketName: 'images' });
+  
+  cachedDb = { 
+    client, 
+    db, 
+    collection: db.collection(collectionName),
+    bucket 
+  };
 
   return cachedDb;
 }

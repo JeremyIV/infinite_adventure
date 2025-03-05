@@ -5,6 +5,8 @@
   ],
   "rewrites": [
     { "source": "/api/continuations/:hash", "destination": "/api/continuations/[hash].js?hash=:hash" },
+    { "source": "/api/images/file/:id", "destination": "/api/images/file/[id].js?id=:id" },
+    { "source": "/api/images/upload", "destination": "/api/images/upload.js" },
     { "source": "/api/stats", "destination": "/api/stats.js" },
     { "source": "/health", "destination": "/api/health.js" }
   ],

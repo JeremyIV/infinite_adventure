@@ -132,10 +132,67 @@ export async function generateImage(prompt, openaiApiKey) {
 
     const data = await response.json();
     debug("OpenAI image generated successfully!");
-    return data.data[0].url;
+    
+    // Store the image in our database
+    const imageUrl = data.data[0].url;
+    return await storeImage(imageUrl);
   } catch (error) {
     debug(`Error generating image: ${error.message}`);
     console.error("Error generating image:", error);
     throw error;
+  }
+}
+
+/**
+ * Store an image from an external URL to our GridFS storage
+ * @param {string} imageUrl The external image URL
+ * @returns {Promise<string>} The new local image URL
+ */
+async function storeImage(imageUrl) {
+  debug("Storing image to local database...");
+  try {
+    debug(`Uploading image from URL: ${imageUrl}`);
+    const response = await fetch(`${CONFIG.API_ENDPOINTS.STORAGE_SERVER}/images/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        url: imageUrl
+      }),
+      mode: "cors"
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      debug(`Image storage error (${response.status}): ${errorText}`);
+      console.warn("Failed to store image locally, using original URL:", errorText);
+      // Return original URL as fallback
+      return imageUrl;
+    }
+
+    try {
+      const data = await response.json();
+      debug(`Image stored successfully with ID: ${data.id}`);
+      
+      if (!data.url || !data.id) {
+        debug("Invalid response from image upload endpoint - missing url or id");
+        return imageUrl; // Fallback to original URL
+      }
+      
+      // Convert relative URL to absolute URL including the base storage server URL
+      const storageBaseUrl = CONFIG.API_ENDPOINTS.STORAGE_SERVER.replace(/\/api$/, '');
+      const fullUrl = `${storageBaseUrl}${data.url}`;
+      debug(`Generated full image URL: ${fullUrl}`);
+      return fullUrl;
+    } catch (parseError) {
+      debug(`Error parsing JSON response: ${parseError.message}`);
+      return imageUrl; // Fallback to original URL
+    }
+  } catch (error) {
+    debug(`Error storing image: ${error.message}`);
+    console.error("Error storing image, using original URL:", error);
+    // Return original URL as fallback
+    return imageUrl;
   }
 }
